@@ -1,0 +1,24 @@
+{
+  "name": "twitter",
+  "version": "0.0.1",
+  "homepage": "https://github.com/heqi/twitter",
+  "authors": [
+    "heqi <heqi37@gmail.com>"
+  ],
+  "main": "web.js",
+  "moduleType": [
+    "node"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.3",
+    "bootstrap-sass-official": "~3.3.4"
+  }
+}
