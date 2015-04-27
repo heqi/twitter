@@ -12,11 +12,11 @@ var FollowList =
         return (
             <div className="list-group">
               {this.props.items.map(function(item){
-              return (
-                <div className="list-group-item">
-                  <FollowItem item={item} />
-                </div>
-              )
+                return (
+                  <div className="list-group-item">
+                    <FollowItem key={item.id} item={item} />
+                  </div>
+                )
             })}</div>
           )
       }

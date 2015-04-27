@@ -19716,11 +19716,12 @@ var FollowList =
         return (
             React.DOM.div({className: "list-group"}, 
               this.props.items.map(function(item){
-              return (
-                React.DOM.div({className: "list-group-item"}, 
-                  FollowItem({item: item})
+                console.log(item);
+                return (
+                  React.DOM.div({className: "list-group-item"}, 
+                    FollowItem({key: item.id, item: item})
+                  )
                 )
-              )
             }))
           )
       }
