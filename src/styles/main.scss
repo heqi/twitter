@@ -5,3 +5,37 @@ $backgroundColor: #F8F8FF;
 body {
   background-color : $backgroundColor;
 }
+
+.searchBar {
+	button {
+		margin-left: 5px;
+	}
+}
+
+.errorMsg{
+	margin-top: 15px;
+}
+
+.item {
+	min-height: 39px;
+
+	.item-content{
+		display: block;
+		margin-left: 58px;
+		.screenName {
+			margin-left: 5px;
+		}
+		p {
+			display: block;
+		}
+	}
+
+	.avatar{
+		display: block;
+		float: left;
+		width: 48px;
+  	height: 48px;
+  	border-radius: 5px;
+	}
+
+}

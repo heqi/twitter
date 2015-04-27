@@ -3,5 +3,5 @@ var APP = require('./components/app');
 var React = require('react');
 
 React.renderComponent(
-  <h1>Hello World!</h1>,
+  <APP />,
   document.getElementById('main'));
