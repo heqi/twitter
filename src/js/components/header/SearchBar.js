@@ -32,11 +32,11 @@ var SearchBar =
             <h2>Search Common Twitter</h2>
             <form onSubmit={this._onSearch}>
               <SearchBarTxtInput
-                placeholder="First Username"
+                placeholder="First Twitter"
                 onChange={this._onChangeFirstUsername}
                 value={this.state.firstUsername}/>
               <SearchBarTxtInput
-                placeholder="Second Username"
+                placeholder="Second Twitter"
                 onChange={this._onChangeSecondUsername}
                 value={this.state.secondUsername}/>
               <SearchBtn 

@@ -19688,11 +19688,14 @@ var FollowItem =
   React.createClass({displayName: 'FollowItem',
     render:function(){
       var data = this.props.item;
+      var url = "https://twitter.com/" + data.screen_name;
       return  (
         React.DOM.div({className: "item"}, 
-          React.DOM.img({className: "avatar", src: data.profile_image_url_https}), 
+          React.DOM.a({href: url, target: "_blank"}, 
+            React.DOM.img({className: "avatar", src: data.profile_image_url_https})
+          ), 
           React.DOM.div({className: "item-content"}, 
-            React.DOM.strong(null, data.name), 
+            React.DOM.a({href: url, target: "_blank"}, " ", React.DOM.strong(null, data.name)), 
             React.DOM.span({className: "screenName"}, "@", data.screen_name), 
             React.DOM.p(null, data.description)
           )
@@ -19716,7 +19719,6 @@ var FollowList =
         return (
             React.DOM.div({className: "list-group"}, 
               this.props.items.map(function(item){
-                console.log(item);
                 return (
                   React.DOM.div({className: "list-group-item"}, 
                     FollowItem({key: item.id, item: item})

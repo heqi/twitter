@@ -17,8 +17,10 @@ body {
 }
 
 .item {
-	min-height: 39px;
-
+	min-height: 48px;
+	a{
+		color: black;
+	}
 	.item-content{
 		display: block;
 		margin-left: 58px;
@@ -26,7 +28,9 @@ body {
 			margin-left: 5px;
 		}
 		p {
+			margin: 0;
 			display: block;
+			line-height: 100%;
 		}
 	}
 
