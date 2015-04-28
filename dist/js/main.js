@@ -19500,20 +19500,66 @@ var AppActions = {
 		      actionType: AppConstants.SEARCH_COMMON_FAILURE,
 		      error: error
 		    })
-   		}
-   )
+   		}.bind(this)
+    )
+  },
+  viewMoreFollow:function(list, ids, target) {
+    if (ids.length <= list.length) {
+      return;
+    }
+    AppDispatcher.handleViewAction({
+      actionType: AppConstants.VIEW_MORE,
+      target: target
+    })
+
+    var index = list.length;
+    var howmany = ids.length - list.length;
+    if (howmany > 10) howmany = 10;
+
+    var idStr = ids.slice();
+    idStr = idStr.splice(index, howmany);
+    idStr = idStr.join(",");
+
+    ApiClient.lookupUsers(idStr, function(data) {
+        AppDispatcher.handleViewAction({
+          actionType: AppConstants.VIEW_MORE_SUCCESS,
+          target: target,
+          data: data
+        })
+      }.bind(this), function(error) {
+        AppDispatcher.handleViewAction({
+          actionType: AppConstants.VIEW_MORE_FAILURE,
+          target: target,
+          error: error
+        })
+      }.bind(this)
+    )
   }
+
 }
 
 module.exports = AppActions;
 
-},{"../api/ApiClient":167,"../constants/AppConstants":179,"../dispatchers/AppDispatcher":180}],167:[function(require,module,exports){
+},{"../api/ApiClient":167,"../constants/AppConstants":181,"../dispatchers/AppDispatcher":182}],167:[function(require,module,exports){
 var ApiClient = {
   search: function(firstUsername, secondUsername, success, failuer) {
     $.ajax({
     url: "/api/twitter/search",
     type: "get",
     data: {firstUsername:firstUsername, secondUsername:secondUsername},
+    contentType: 'application/json; charset=utf-8',
+    success: function(data){
+      success(data);
+    },
+    error : function(jqXHR, textStatus, errorThrown){
+      failuer(jqXHR.responseText);
+    }});
+  },
+  lookupUsers: function(idStr, success, failuer) {
+    $.ajax({
+    url: "/api/twitter/lookup_users",
+    type: "get",
+    data: {user_id:idStr},
     contentType: 'application/json; charset=utf-8',
     success: function(data){
       success(data);
@@ -19569,7 +19615,7 @@ var APP =
   });
 module.exports = APP;
 
-},{"./Template":168,"./result/Result.js":178,"react":165,"react-router-component":15}],170:[function(require,module,exports){
+},{"./Template":168,"./result/Result.js":180,"react":165,"react-router-component":15}],170:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 
@@ -19621,11 +19667,11 @@ var SearchBar =
             React.DOM.h2(null, "Search Common Twitter"), 
             React.DOM.form({onSubmit: this._onSearch}, 
               SearchBarTxtInput({
-                placeholder: "First Username", 
+                placeholder: "First Twitter", 
                 onChange: this._onChangeFirstUsername, 
                 value: this.state.firstUsername}), 
               SearchBarTxtInput({
-                placeholder: "Second Username", 
+                placeholder: "Second Twitter", 
                 onChange: this._onChangeSecondUsername, 
                 value: this.state.secondUsername}), 
               SearchBtn({
@@ -19640,7 +19686,7 @@ var SearchBar =
   });
 module.exports = SearchBar;
 
-},{"../../actions/AppActions":166,"../../mixins/StoreWatchMixin":183,"../../stores/AppStore":184,"./ErrorMsg":170,"./SearchBarTxtInput":172,"./SearchBtn":173,"react":165}],172:[function(require,module,exports){
+},{"../../actions/AppActions":166,"../../mixins/StoreWatchMixin":185,"../../stores/AppStore":186,"./ErrorMsg":170,"./SearchBarTxtInput":172,"./SearchBtn":173,"react":165}],172:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 
@@ -19689,8 +19735,9 @@ var FollowItem =
     render:function(){
       var data = this.props.item;
       var url = "https://twitter.com/" + data.screen_name;
+      
       return  (
-        React.DOM.div({className: "item"}, 
+        React.DOM.div({className: "list-group-item item"}, 
           React.DOM.a({href: url, target: "_blank"}, 
             React.DOM.img({className: "avatar", src: data.profile_image_url_https})
           ), 
@@ -19707,79 +19754,137 @@ module.exports = FollowItem;
 },{"react":165}],175:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
+
+var FollowItemMore =
+  React.createClass({displayName: 'FollowItemMore',
+    _onClick:function() {
+      this.props.viewMore();
+    }, 
+    render:function(){
+      return  (
+        React.DOM.a({className: "list-group-item item-view-more", onClick: this._onClick}, "View More")
+        )
+    }
+  });
+module.exports = FollowItemMore;
+},{"react":165}],176:[function(require,module,exports){
+/** @jsx React.DOM */
+var React = require('react');
+
+var FollowItemMsg =
+  React.createClass({displayName: 'FollowItemMsg',
+    render:function(){
+      return  (
+          React.DOM.div({className: "list-group-item item-msg"}, this.props.children)
+        )
+    }
+  });
+module.exports = FollowItemMsg;
+
+},{"react":165}],177:[function(require,module,exports){
+/** @jsx React.DOM */
+var React = require('react');
 var FollowItem = require('./FollowItem');
+var FollowItemMore = require('./FollowItemMore');
+var FollowItemMsg = require('./FollowItemMsg');
 
 var FollowList =
   React.createClass({displayName: 'FollowList',
     render:function(){
-      if (this.props.items.length === 0)
-      {
-        return (React.DOM.div({className: "list-group"}, React.DOM.div({className: "list-group-item"}, "no result")))
+      var content = null;
+      var msg = null;
+      if (this.props.list.length === 0) {
+        msg = (FollowItemMsg(null, "No Result"));
       } else {
-        return (
-            React.DOM.div({className: "list-group"}, 
-              this.props.items.map(function(item){
-                return (
-                  React.DOM.div({className: "list-group-item"}, 
-                    FollowItem({key: item.id, item: item})
-                  )
-                )
-            }))
-          )
+        content = this.props.list.map(function(item){
+          return (
+              FollowItem({key: item.id, item: item})
+          )})
+
+        if (this.props.ids.length > this.props.list.length) {
+          if (this.props.loading) {
+            msg = (FollowItemMsg(null, "Loading..."));
+          } else {
+            msg = (FollowItemMore({viewMore: this.props.viewMore}));
+          }
+        }
       }
+
+      return (
+        React.DOM.div({className: "list-group"}, 
+            content, 
+            msg
+          )
+        )
     }
   });
 
 module.exports = FollowList;
-},{"./FollowItem":174,"react":165}],176:[function(require,module,exports){
+},{"./FollowItem":174,"./FollowItemMore":175,"./FollowItemMsg":176,"react":165}],178:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 var AppStore = require('../../stores/AppStore');
 var StoreWatchMixin = require('../../mixins/StoreWatchMixin');
 var FollowList = require('./FollowList');
+var AppActions = require('../../actions/AppActions');
+var AppConstants = require('../../constants/AppConstants');
 
 function getFollowers(){
-  return {items: AppStore.getFollowers()}
+  return AppStore.getFollowers();
 }
 
 var Followers =
   React.createClass({displayName: 'Followers',
   	mixins: [new StoreWatchMixin(getFollowers)],
+    _viewMore: function() {
+      AppActions.viewMoreFollow(this.state.list, this.state.ids, AppConstants.TARGET_FOLLOERS);
+    },
     render:function(){
       return  (
         React.DOM.div({className: "col-md-6"}, 
         	React.DOM.h3(null, "Common Followers"), 
-          FollowList({items: this.state.items})
+          FollowList({list: this.state.list, 
+            ids: this.state.ids, 
+            loading: this.state.loading, 
+            viewMore: this._viewMore})
         )
         )
     }
   });
 module.exports = Followers;
-},{"../../mixins/StoreWatchMixin":183,"../../stores/AppStore":184,"./FollowList":175,"react":165}],177:[function(require,module,exports){
+},{"../../actions/AppActions":166,"../../constants/AppConstants":181,"../../mixins/StoreWatchMixin":185,"../../stores/AppStore":186,"./FollowList":177,"react":165}],179:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 var AppStore = require('../../stores/AppStore');
 var StoreWatchMixin = require('../../mixins/StoreWatchMixin');
 var FollowList = require('./FollowList');
+var AppActions = require('../../actions/AppActions');
+var AppConstants = require('../../constants/AppConstants');
 
 function getFollowings(){
-  return {items: AppStore.getFollowings()}
+  return AppStore.getFollowings();
 }
 
 var Followings =
   React.createClass({displayName: 'Followings',
   	mixins: [new StoreWatchMixin(getFollowings)],
+    _viewMore: function() {
+      AppActions.viewMoreFollow(this.state.list, this.state.ids, AppConstants.TARGET_FOLLOWINGS);
+    },
     render:function(){
       return  (
         React.DOM.div({className: "col-md-6"}, 
         	React.DOM.h3(null, "Common Followings"), 
-          FollowList({items: this.state.items})
+          FollowList({list: this.state.list, 
+            ids: this.state.ids, 
+            loading: this.state.loading, 
+            viewMore: this._viewMore})
         )
       )
     }
   });
 module.exports = Followings;
-},{"../../mixins/StoreWatchMixin":183,"../../stores/AppStore":184,"./FollowList":175,"react":165}],178:[function(require,module,exports){
+},{"../../actions/AppActions":166,"../../constants/AppConstants":181,"../../mixins/StoreWatchMixin":185,"../../stores/AppStore":186,"./FollowList":177,"react":165}],180:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 var Followers = require('./Followers');
@@ -19797,15 +19902,20 @@ var Result =
     }
   });
 module.exports = Result;
-},{"./Followers":176,"./Followings":177,"react":165}],179:[function(require,module,exports){
+},{"./Followers":178,"./Followings":179,"react":165}],181:[function(require,module,exports){
 module.exports = {
   SEARCH_COMMON: 'SEARCH_COMMON',
   SEARCH_COMMON_SUCCESS: 'SEARCH_COMMON_SUCCESS',
   SEARCH_COMMON_FAILURE: 'SEARCH_COMMON_FAILURE',
-  ERROR_MSG: 'ERROR_MSG'
+  ERROR_MSG: 'ERROR_MSG',
+  VIEW_MORE: 'VIEW_MORE',
+  VIEW_MORE_SUCCESS: 'VIEW_MORE_SUCCESS',
+  VIEW_MORE_FAILURE: 'VIEW_MORE_FAILURE',
+  TARGET_FOLLOWINGS: 'TARGET_FOLLOWINGS',
+  TARGET_FOLLOERS: 'TARGET_FOLLOERS'
 };
 
-},{}],180:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 var Dispatcher = require('./dispatcher');
 var merge  = require('react/lib/merge');
 
@@ -19821,7 +19931,7 @@ var AppDispatcher = merge(Dispatcher.prototype, {
 
 module.exports = AppDispatcher;
 
-},{"./dispatcher":181,"react/lib/merge":151}],181:[function(require,module,exports){
+},{"./dispatcher":183,"react/lib/merge":151}],183:[function(require,module,exports){
 var Promise = require('es6-promise').Promise;
 var merge = require('react/lib/merge');
 
@@ -19878,7 +19988,7 @@ Dispatcher.prototype = merge(Dispatcher.prototype, {
 
 module.exports = Dispatcher;
 
-},{"es6-promise":1,"react/lib/merge":151}],182:[function(require,module,exports){
+},{"es6-promise":1,"react/lib/merge":151}],184:[function(require,module,exports){
 /** @jsx React.DOM */
 var APP = require('./components/app');
 var React = require('react');
@@ -19887,7 +19997,7 @@ React.renderComponent(
   APP(null),
   document.getElementById('main'));
 
-},{"./components/app":169,"react":165}],183:[function(require,module,exports){
+},{"./components/app":169,"react":165}],185:[function(require,module,exports){
 /** @jsx React.DOM */
 var React = require('react');
 var AppStore = require('../stores/AppStore');
@@ -19911,7 +20021,7 @@ var StoreWatchMixin = function(cb){
 
 module.exports = StoreWatchMixin;
 
-},{"../stores/AppStore":184,"react":165}],184:[function(require,module,exports){
+},{"../stores/AppStore":186,"react":165}],186:[function(require,module,exports){
 var AppDispatcher = require('../dispatchers/AppDispatcher');
 var AppConstants = require('../constants/AppConstants');
 var merge = require('react/lib/merge');
@@ -19927,8 +20037,10 @@ var _searchBar = {
   }
 
 
-var _followings = [];
-var _followers = [];
+var _followings = {list:[], ids:[], loading:false};
+var _followers = {list:[], ids:[], loading:false};
+// var _followersIds = [];
+// var _followingsIds = [];
 
 
 var AppStore = merge(EventEmitter.prototype, {
@@ -19961,20 +20073,47 @@ var AppStore = merge(EventEmitter.prototype, {
     switch(action.actionType){
       case AppConstants.SEARCH_COMMON:
         _searchBar.loading = true;
-        _searchBar.firstUsername = payload.action.firstUsername;
-        _searchBar.secondUsername = payload.action.secondUsername;
+        _searchBar.firstUsername = action.firstUsername;
+        _searchBar.secondUsername = action.secondUsername;
         break;
       case AppConstants.SEARCH_COMMON_SUCCESS:
         _searchBar.loading = false;
         _searchBar.errorMsg = "";
-        _followers = payload.action.data.followersList;
-        _followings = payload.action.data.followingsList;
+        _followers.list = action.data.followersList;
+        _followings.list = action.data.followingsList;
+        _followers.ids = action.data.followersIds;
+        _followings.ids = action.data.followingsIds;
         break;
       case AppConstants.SEARCH_COMMON_FAILURE:
 
         _searchBar.loading = false;
         // _searchBar.errorMsg = action.error;
         _searchBar.errorMsg = "Error: User not exist";
+        break;
+      case AppConstants.VIEW_MORE:
+        if (action.target === AppConstants.TARGET_FOLLOWINGS) {
+          _followings.loading = true;
+        } else if (action.target === AppConstants.TARGET_FOLLOERS) {
+          _followers.loading = true;
+        }
+        break;
+
+      case AppConstants.VIEW_MORE_SUCCESS:
+        if (action.target === AppConstants.TARGET_FOLLOWINGS) {
+          _followings.loading = false;
+          _followings.list = _followings.list.concat(action.data);
+        } else if (action.target === AppConstants.TARGET_FOLLOERS) {
+          _followers.loading = false;
+          _followers.list = _followers.list.concat(action.data);
+        }
+        break;
+
+      case AppConstants.VIEW_MORE_FAILURE:
+        if (action.target === AppConstants.TARGET_FOLLOWINGS) {
+          _followings.loading = false;
+        } else if (action.target === AppConstants.TARGET_FOLLOERS) {
+          _followers.loading = false;
+        }
         break;
       }
     AppStore.emitChange();
@@ -19985,4 +20124,4 @@ var AppStore = merge(EventEmitter.prototype, {
 
 module.exports = AppStore;
 
-},{"../constants/AppConstants":179,"../dispatchers/AppDispatcher":180,"events":11,"react/lib/merge":151}]},{},[182])
+},{"../constants/AppConstants":181,"../dispatchers/AppDispatcher":182,"events":11,"react/lib/merge":151}]},{},[184])

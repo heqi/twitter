@@ -16,8 +16,17 @@ body {
 	margin-top: 15px;
 }
 
+.item-msg {
+	text-align: center;
+}
+
+.item-view-more {
+	text-align: center;
+	cursor: pointer;
+}
+
 .item {
-	min-height: 48px;
+	min-height: 70px;
 	a{
 		color: black;
 	}
@@ -41,5 +50,4 @@ body {
   	height: 48px;
   	border-radius: 5px;
 	}
-
 }

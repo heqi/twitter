@@ -6,8 +6,9 @@ var FollowItem =
     render:function(){
       var data = this.props.item;
       var url = "https://twitter.com/" + data.screen_name;
+      
       return  (
-        <div className="item">
+        <div className="list-group-item item">
           <a href={url} target="_blank">
             <img className="avatar" src={data.profile_image_url_https} />
           </a>

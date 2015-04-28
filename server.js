@@ -75,6 +75,13 @@ var compareArray = function(array1, array2) {
 	return result;
 }
 
+var handleLookupParament = function(array) {
+	var result = array.slice();
+	if (array.length > 10) result = result.splice(0,10);
+	result = result.join(",");
+	return result;
+}
+
 app.get('/api/twitter/search',function(req, res) {
 	var firstUsername = req.query.firstUsername;
 	var secondUsername = req.query.secondUsername;
@@ -117,15 +124,16 @@ app.get('/api/twitter/search',function(req, res) {
 	    	return;
 	    }
 
+
 	    result.followersIds = compareArray(tmpResult.firstFollowers.ids, tmpResult.secondFollowers.ids);
 	    result.followingsIds = compareArray(tmpResult.firstFollowings.ids, tmpResult.secondFollowings.ids);
 
 	    async.parallel([
 		    function(callback2) {
-		   		twitterUsersLookup(result.followersIds.join(","), callback2, function(value) {result.followersList = value;});
+		   		twitterUsersLookup(handleLookupParament(result.followersIds), callback2, function(value) {result.followersList = value;});
 		    },
 		    function(callback2) {
-		    	twitterUsersLookup(result.followingsIds.join(","), callback2, function(value) {result.followingsList = value;});
+		    	twitterUsersLookup(handleLookupParament(result.followingsIds), callback2, function(value) {result.followingsList = value;});
 		    }
 			], function(err) {
 				if (err) return res.status(500).send(err);
@@ -134,6 +142,20 @@ app.get('/api/twitter/search',function(req, res) {
 
 			});
 	});
+})
+
+app.get('/api/twitter/lookup_users',function(req, res) {
+	console.log("lookup users");
+	var params = req.query;
+	var value = req.query.user_id;
+	var url = 'users/lookup';
+	// var params = {user_id:value};
+  client.get(url, params, function(error, tweets, response){
+	  if (!error) {
+	  	res.send(tweets);
+	  } else {
+	  	res.status(500).send(err);
+  }});
 })
 
 
